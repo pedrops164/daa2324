@@ -34,13 +34,26 @@ def preprocess_location(train_X, test_X):
     # TODO
     pass
 
-def preprocess_year(train_X, test_X):
-    # TODO
-    pass
+def preprocess_year(X):
 
-def preprocess_kilometers_driven(train_X, test_X):
-    # TODO
-    pass
+    # We Group years before 2006
+    X['Year'] = X['Year'].apply(lambda x: 2005 if x <= 2005 else x)
+
+    # We can subtract the max year from the year column, so that the values in the year column represent the age of the car
+    X['Age'] = X['Year'].max() - X['Year']
+
+    # We drop the Year column because we don't need it anymore
+    X.drop(['Year'], inplace=True, axis=1)
+
+    # We can also one hot encode the Age instead, might be better
+    # X = pd.get_dummies(X, columns=['Age'], prefix='Age', drop_first=True)
+
+def preprocess_kilometers_driven(X):
+    from sklearn.preprocessing import StandardScaler
+
+    # We scale the kilometers driven so that the feature has a mean of 0 and std deviation of 1 (z-score normalization)
+    scaler = StandardScaler()
+    X['Kilometers_Driven'] = scaler.fit_transform(X[['Kilometers_Driven']])
 
 def preprocess_fuel_type(train_X, test_X):
     # TODO
