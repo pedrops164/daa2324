@@ -64,8 +64,12 @@ def preprocess_transmission(train_X, test_X):
     pass
 
 def preprocess_owner_type(train_X, test_X):
-    # TODO
-    pass
+    # There are only 4 values, 'First', 'Second', 'Third' and 'Fourth & Above', so we create a replace map, joining the 2 last ones
+    # as they have a small number of occurences
+    replace_map = {'Owner_Type': { 'First': 1, 'Second': 2, 'Third': 3, 'Fourth & Above':3 }}
+    
+    train_X.replace(replace_map, inplace=True)
+    test_X.replace(replace_map, inplace=True)
 
 def preprocess_mileage(train_X, test_X):
     # TODO
@@ -73,7 +77,30 @@ def preprocess_mileage(train_X, test_X):
 
 def preprocess_engine(train_X, test_X):
     # TODO
-    pass
+    # Function to remove CC from Engine and transform to int
+    def removeCC(val):
+        num, _ = val.split(" ")
+        return float(num)
+
+    train_X['Engine'] = train_X['Engine'].map(removeCC, na_action="ignore")
+    test_X['Engine'] = test_X['Engine'].map(removeCC, na_action="ignore")
+    
+    groupByNameTrain = train_X.groupby('Name')['Engine'].mean().to_dict()
+    groupByNameTest = test_X.groupby('Name')['Engine'].mean().to_dict()
+    
+    train_X['Engine'].fillna(train_X['Name'].map(groupByNameTrain), inplace=True)
+    test_X['Engine'].fillna(test_X['Name'].map(groupByNameTest), inplace=True)
+    
+    priceBinTrain = pd.cut(train_X['Price'], bins=int(train_X['Price'].max()))
+    priceBinTest = pd.cut(test_X['Price'], bins=int(test_X['Price'].max()))
+
+    groupByPriceBinTrain = train_X.groupby(priceBinTrain)['Engine'].mean().to_dict()
+    groupByPriceBinTest = test_X.groupby(priceBinTest)['Engine'].mean().to_dict()
+    
+    train_X['Engine'].fillna(train_X['Price'].map(groupByPriceBinTrain), inplace=True)
+    train_X['Engine'] = train_X['Engine'].astype(int)
+    test_X['Engine'].fillna(test_X['Price'].map(groupByPriceBinTest), inplace=True)
+    test_X['Engine'] = test_X['Engine'].astype(int)
 
 def preprocess_power(train_X, test_X):
     # TODO
