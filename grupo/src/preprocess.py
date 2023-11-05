@@ -108,7 +108,15 @@ def preprocess_power(train_X, test_X):
 
 def preprocess_seats(train_X, test_X):
     # TODO
-    pass
+    groupSitsByNameTrain = train_X.groupby('Name')['Seats'].mean().to_dict()
+    groupSitsByNameTest = test_X.groupby('Name')['Seats'].mean().to_dict()
+    
+    train_X['Seats'].fillna(train_X['Name'].map(groupSitsByNameTrain), inplace=True)
+    test_X['Seats'].fillna(test_X['Name'].map(groupSitsByNameTest), inplace=True)
+    
+    train_X['Seats'] = train_X['Seats'].fillna(train_X['Seats'].mode()[0])
+    test_X['Seats'] = test_X['Seats'].fillna(test_X['Seats'].mode()[0])
+    
 
 def preprocess_new_price(train_X, test_X):
     # TODO

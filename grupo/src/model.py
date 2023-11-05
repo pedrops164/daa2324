@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
-from preprocess import preprocess_name, preprocess_year
+from preprocess import *
 
 # import data
 data = pd.read_csv('../input/train.csv')
@@ -20,3 +20,7 @@ X = pd.concat([train_X, test_X], axis=0)
 
 preprocess_name(train, test_X)
 preprocess_year(X)
+
+preprocess_owner_type(train_X, test_X)
+preprocess_engine(train_X, test_X)
+preprocess_seats(train_X, test_X)
