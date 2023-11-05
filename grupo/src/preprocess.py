@@ -45,9 +45,15 @@ def preprocess_year(X):
     # We drop the Year column because we don't need it anymore
     X.drop(['Year'], inplace=True, axis=1)
 
-def preprocess_kilometers_driven(train_X, test_X):
-    # TODO
-    pass
+    # We can also one hot encode the Age instead, might be better
+    # X = pd.get_dummies(X, columns=['Age'], prefix='Age', drop_first=True)
+
+def preprocess_kilometers_driven(X):
+    from sklearn.preprocessing import StandardScaler
+
+    # We scale the kilometers driven so that the feature has a mean of 0 and std deviation of 1 (z-score normalization)
+    scaler = StandardScaler()
+    X['Kilometers_Driven'] = scaler.fit_transform(X[['Kilometers_Driven']])
 
 def preprocess_fuel_type(train_X, test_X):
     # TODO
