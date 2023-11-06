@@ -32,6 +32,7 @@ def preprocess_name(train, test):
 
 def preprocess_location(train_X, test_X):
     # TODO
+    # Nada para meter ig
     pass
 
 def preprocess_year(X):
@@ -104,8 +105,23 @@ def preprocess_engine(train_X, test_X):
 
 def preprocess_power(train_X, test_X):
     # TODO
+    def removeBHP(str):
+        flt = str.split(" bhp")
+        return float(flt)
     pass
 
+    train_X['Power'] = train_X['Power'].map(removeBHP, na_action="ignore")
+    test_X['Power'] = test_X['Power'].map(removeBHP, na_action="ignore")
+    
+    groupNamePowerTrain = train_X.groupby('Name')['Power'].mean().to_dict()
+    groupNamePowerTest = test_X.groupby('Name')['Power'].mean().to_dict()
+    
+    train_X['Power'].fillna(train_X['Name'].map(groupNamePowerTrain), inplace=True)
+    test_X['Power'].fillna(test_X['Name'].map(groupNamePowerTest), inplace=True)
+    
+    train_X['Power'].dropna(subset=['Power'])
+    test_X['Power'].dropna(subset=['Power'])
+    
 def preprocess_seats(train_X, test_X):
     # TODO
     groupSitsByNameTrain = train_X.groupby('Name')['Seats'].mean().to_dict()
@@ -120,5 +136,6 @@ def preprocess_seats(train_X, test_X):
 
 def preprocess_new_price(train_X, test_X):
     # TODO
-    # just drop new_price column
+    train_X.drop(columns=['New_Price'])
+    test_X.drop(columns=['New_Price'])
     pass
