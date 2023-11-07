@@ -35,26 +35,37 @@ def preprocess_location(train_X, test_X):
     # Nada para meter ig
     pass
 
-def preprocess_year(X):
+def preprocess_year(train_X, test_X):
 
-    # We Group years before 2006
-    X['Year'] = X['Year'].apply(lambda x: 2005 if x <= 2005 else x)
+    # Determine the maximum year from both train and test sets to use as a reference
+    max_year = max(train_X['Year'].max(), test_X['Year'].max())
 
-    # We can subtract the max year from the year column, so that the values in the year column represent the age of the car
-    X['Age'] = X['Year'].max() - X['Year']
+    # Group years before 2006 for both train and test sets
+    train_X['Year'] = train_X['Year'].apply(lambda x: 2005 if x <= 2005 else x)
+    test_X['Year'] = test_X['Year'].apply(lambda x: 2005 if x <= 2005 else x)
 
-    # We drop the Year column because we don't need it anymore
-    X.drop(['Year'], inplace=True, axis=1)
+    # Subtract the max year from the year column to represent the age of the car
+    train_X['Age'] = max_year - train_X['Year']
+    test_X['Age'] = max_year - test_X['Year']
+
+    # Drop the Year column as it's no longer needed
+    train_X.drop(['Year'], inplace=True, axis=1)
+    test_X.drop(['Year'], inplace=True, axis=1)
 
     # We can also one hot encode the Age instead, might be better
-    # X = pd.get_dummies(X, columns=['Age'], prefix='Age', drop_first=True)
+    # train_X = pd.get_dummies(train_X, columns=['Age'], prefix='Age', drop_first=True)
+    # test_X = pd.get_dummies(test_X, columns=['Age'], prefix='Age', drop_first=True)
 
-def preprocess_kilometers_driven(X):
+def preprocess_kilometers_driven(train, test):
     from sklearn.preprocessing import StandardScaler
 
     # We scale the kilometers driven so that the feature has a mean of 0 and std deviation of 1 (z-score normalization)
     scaler = StandardScaler()
-    X['Kilometers_Driven'] = scaler.fit_transform(X[['Kilometers_Driven']])
+    train['Kilometers_Driven'] = scaler.fit_transform(train[['Kilometers_Driven']])
+    test['Kilometers_Driven'] = scaler.fit_transform(test[['Kilometers_Driven']])
+
+    train.rename(columns={'Kilometers_Driven': 'Km_Driven_Scaled'}, inplace=True)
+    test.rename(columns={'Kilometers_Driven': 'Km_Driven_Scaled'}, inplace=True)
 
 def preprocess_fuel_type(train_X, test_X):
     # TODO
@@ -95,20 +106,33 @@ def preprocess_engine(train_X, test_X):
     priceBinTrain = pd.cut(train_X['Price'], bins=int(train_X['Price'].max()))
     priceBinTest = pd.cut(test_X['Price'], bins=int(test_X['Price'].max()))
 
-    groupByPriceBinTrain = train_X.groupby(priceBinTrain)['Engine'].mean().to_dict()
-    groupByPriceBinTest = test_X.groupby(priceBinTest)['Engine'].mean().to_dict()
+    # observed=True to supress the deprecated warnings
+    groupByPriceBinTrain = train_X.groupby(priceBinTrain, observed=True)['Engine'].mean().to_dict()
+    groupByPriceBinTest = test_X.groupby(priceBinTest, observed=True)['Engine'].mean().to_dict()
     
     train_X['Engine'].fillna(train_X['Price'].map(groupByPriceBinTrain), inplace=True)
-    train_X['Engine'] = train_X['Engine'].astype(int)
     test_X['Engine'].fillna(test_X['Price'].map(groupByPriceBinTest), inplace=True)
+
+    # Check for any remaining NaN values and fill them with a default value or handle them as needed
+    # We will fill with the overall mean of the 'Engine' column
+    # Calculate the mean engine value for the whole training set
+    overall_engine_mean = train_X['Engine'].mean()
+    train_X['Engine'].fillna(overall_engine_mean, inplace=True)
+    test_X['Engine'].fillna(overall_engine_mean, inplace=True)
+
+    train_X['Engine'] = train_X['Engine'].astype(int)
     test_X['Engine'] = test_X['Engine'].astype(int)
+
 
 def preprocess_power(train_X, test_X):
     # TODO
-    def removeBHP(str):
-        flt = str.split(" bhp")
-        return float(flt)
-    pass
+    def removeBHP(str_val):
+        parts = str_val.split(" bhp")
+        if parts[0]:  # Check if the first part is not an empty string
+            return float(parts[0])
+        else:
+            return None  # Return None if there's no numeric part before " bhp"
+
 
     train_X['Power'] = train_X['Power'].map(removeBHP, na_action="ignore")
     test_X['Power'] = test_X['Power'].map(removeBHP, na_action="ignore")
@@ -119,8 +143,8 @@ def preprocess_power(train_X, test_X):
     train_X['Power'].fillna(train_X['Name'].map(groupNamePowerTrain), inplace=True)
     test_X['Power'].fillna(test_X['Name'].map(groupNamePowerTest), inplace=True)
     
-    train_X['Power'].dropna(subset=['Power'])
-    test_X['Power'].dropna(subset=['Power'])
+    train_X.dropna(subset=['Power'], inplace=True)
+    test_X.dropna(subset=['Power'], inplace=True)
     
 def preprocess_seats(train_X, test_X):
     # TODO
@@ -136,6 +160,5 @@ def preprocess_seats(train_X, test_X):
 
 def preprocess_new_price(train_X, test_X):
     # TODO
-    train_X.drop(columns=['New_Price'])
-    test_X.drop(columns=['New_Price'])
-    pass
+    train_X.drop(columns=['New_Price'], axis=1, inplace=True)
+    test_X.drop(columns=['New_Price'], axis=1, inplace=True)

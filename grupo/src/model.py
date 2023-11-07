@@ -18,9 +18,32 @@ test_y = test['Price']
 
 X = pd.concat([train_X, test_X], axis=0)
 
-preprocess_name(train, test_X)
-preprocess_year(X)
 
-preprocess_owner_type(train_X, test_X)
-preprocess_engine(train_X, test_X)
-preprocess_seats(train_X, test_X)
+# tbag
+preprocess_owner_type(train, test)
+preprocess_engine(train, test)
+preprocess_seats(train, test)
+
+#hendrix
+preprocess_power(train, test)
+preprocess_new_price(train, test)
+
+# garcon
+preprocess_name(train, test)
+preprocess_year(train, test)
+preprocess_kilometers_driven(train, test)
+
+#falta
+#preprocess_transmission(train, test_X)
+#preprocess_fuel_type(train, test_X)
+#preprocess_location(train, test_X)
+#preprocess_mileage(train, test_X)
+train.drop(columns=['Transmission', 'Fuel_Type', 'Location', 'Mileage'], inplace=True, axis=1)
+test.drop(columns=['Transmission', 'Fuel_Type', 'Location', 'Mileage'], inplace=True, axis=1)
+
+print(train.head())
+print(test.head())
+
+print(train.info())
+print()
+print(test.info())
