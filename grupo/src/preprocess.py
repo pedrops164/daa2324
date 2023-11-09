@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.preprocessing import LabelBinarizer
 
 def preprocess_name(train, test):
     # Preprocess the name column
@@ -32,8 +33,13 @@ def preprocess_name(train, test):
 
 def preprocess_location(train_X, test_X):
     # TODO
-    # Nada para meter ig
-    pass
+    lb = LabelBinarizer()
+    lb_resultsTrain = lb.fit_transform(train_X['Location'])
+    lb_resultsTest = lb.fit_transform(test_X['Location'])
+    resTrain = pd.DataFrame(lb_resultsTrain, columns=lb.classes_)
+    resTest = pd.DataFrame(lb_resultsTest, columns=lb.classes_)
+    pd.concat([train_X, resTrain], axis=1)
+    pd.concat([test_X, resTest], axis=1)
 
 def preprocess_year(train_X, test_X):
 
