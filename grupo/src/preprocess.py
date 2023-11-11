@@ -74,12 +74,15 @@ def preprocess_kilometers_driven(train, test):
     test.rename(columns={'Kilometers_Driven': 'Km_Driven_Scaled'}, inplace=True)
 
 def preprocess_fuel_type(train_X, test_X):
-    # TODO
-    pass
+    replace_map = {'Fuel_Type': { 'Diesel': 1, 'Petrol': 2, 'Eletric': 3}}
+    train_X.replace(replace_map, inplace=True)
+    test_X.replace(replace_map, inplace=True)
 
 def preprocess_transmission(train_X, test_X):
-    # TODO
-    pass
+    replace_map2 = {'Transmission': { 'Manual': 1, 'Automatic': 2}}
+    train_X.replace(replace_map2, inplace=True)
+    test_X.replace(replace_map2, inplace=True)
+
 
 def preprocess_owner_type(train_X, test_X):
     # There are only 4 values, 'First', 'Second', 'Third' and 'Fourth & Above', so we create a replace map, joining the 2 last ones
@@ -90,8 +93,42 @@ def preprocess_owner_type(train_X, test_X):
     test_X.replace(replace_map, inplace=True)
 
 def preprocess_mileage(train_X, test_X):
-    # TODO
-    pass
+    MileageKMPL = []
+
+    for index,row in train_X.iterrows():
+        m = row['Mileage']
+        if 'km/kg' in m:
+            m = m[:-6]
+            if 1==row['Fuel_Type']:
+                m = float(m)*0.84
+                MileageKMPL.append(float(m))
+            else:
+                m = float(m)*0.75
+                MileageKMPL.append(float(m))
+        else:
+            m = m[:-5]
+            MileageKMPL.append(float(m))
+        pass
+
+    MileageKMPLTest = []
+
+    for index,row in test_X.iterrows():
+        m = row['Mileage']
+        if 'km/kg' in m:
+            m = m[:-6]
+            if 1==row['Fuel_Type']:
+                m = float(m)*0.84
+                MileageKMPLTest.append(float(m))
+            else:
+                m = float(m)*0.75
+                MileageKMPLTest.append(float(m))
+        else:
+            m = m[:-5]
+            MileageKMPLTest.append(float(m))
+        pass
+
+    train_X['Mileage']=MileageKMPL
+    test_X['Mileage']=MileageKMPLTest
 
 def preprocess_engine(train_X, test_X):
     # TODO
