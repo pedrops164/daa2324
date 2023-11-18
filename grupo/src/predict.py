@@ -37,6 +37,10 @@ def cross_val_score(model, cv, X, y, label=''):
 def predict(X, y):
     mae_df, mse_df, r2_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
+    # Reset the indices to ensure alignment
+    X = X.reset_index(drop=True)
+    y = y.reset_index(drop=True)
+
     k = KFold(n_splits=5, shuffle=True, random_state=2023)
     models = [
         ('lin_reg', LinearRegression()),
@@ -45,9 +49,9 @@ def predict(X, y):
         ('rf', RandomForestRegressor(random_state=2023)),
         ('gb', GradientBoostingRegressor(random_state=2023)),
         ('svr', SVR()),
-        ('xgb', XGBRegressor(random_state=2023)),
-        ('lgb', LGBMRegressor(random_state=2023)),
-        ('cb', CatBoostRegressor(random_state=2023, verbose=0))
+        ('xgb', XGBRegressor(random_state=2023, enable_categorical=True)),
+        ('lgb', LGBMRegressor(random_state=2023, verbose=0)),
+        ('cb', CatBoostRegressor(random_state=2023, verbose=0, cat_features=['Brand_Bin']))
     ]
 
     for (label, model) in models:

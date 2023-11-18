@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from preprocess import *
+from predict import predict
 
 # import data
 data = pd.read_csv('../input/train.csv')
@@ -34,12 +35,13 @@ preprocess_year(train, test)
 preprocess_kilometers_driven(train, test)
 
 #falta
-#preprocess_transmission(train, test_X)
-#preprocess_fuel_type(train, test_X)
-#preprocess_location(train, test_X)
-#preprocess_mileage(train, test_X)
-train.drop(columns=['Transmission', 'Fuel_Type', 'Location', 'Mileage'], inplace=True, axis=1)
-test.drop(columns=['Transmission', 'Fuel_Type', 'Location', 'Mileage'], inplace=True, axis=1)
+preprocess_transmission(train, test)
+preprocess_fuel_type(train, test)
+train, test = preprocess_location(train, test)
+#preprocess_mileage(train, test)
+
+train.drop(columns=['Mileage'], inplace=True, axis=1)
+test.drop(columns=['Mileage'], inplace=True, axis=1)
 
 print(train.head())
 print(test.head())
@@ -47,3 +49,5 @@ print(test.head())
 print(train.info())
 print()
 print(test.info())
+
+predict(train.drop(columns=['Price']), train['Price'])

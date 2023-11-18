@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import OneHotEncoder
 
 def preprocess_name(train, test):
     # Preprocess the name column
@@ -31,15 +32,38 @@ def preprocess_name(train, test):
 
     # might be even better to create one feature for each bin (one hot encoding!)
 
-def preprocess_location(train_X, test_X):
-    # TODO
-    lb = LabelBinarizer()
-    lb_resultsTrain = lb.fit_transform(train_X['Location'])
-    lb_resultsTest = lb.fit_transform(test_X['Location'])
-    resTrain = pd.DataFrame(lb_resultsTrain, columns=lb.classes_)
-    resTest = pd.DataFrame(lb_resultsTest, columns=lb.classes_)
-    pd.concat([train_X, resTrain], axis=1)
-    pd.concat([test_X, resTest], axis=1)
+def preprocess_location(train, test):
+    # Create a OneHotEncoder instance
+    encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+
+    # Concatenate the Location column of both train and test data for fitting
+    all_locations = pd.concat([train[['Location']], test[['Location']]], axis=0)
+
+    # Fit the encoder on the concatenated Location data
+    encoder.fit(all_locations)
+
+    # Transform the Location column of both train and test data
+    train_encoded = encoder.transform(train[['Location']])
+    test_encoded = encoder.transform(test[['Location']])
+
+    # Convert the encoded features into a DataFrame
+    columns = [f"Location_{cat}" for cat in encoder.categories_[0]]
+    train_encoded_df = pd.DataFrame(train_encoded, columns=columns)
+    test_encoded_df = pd.DataFrame(test_encoded, columns=columns)
+
+    # Reset index of train and test dataframes to avoid index mismatch issues
+    train.reset_index(drop=True, inplace=True)
+    test.reset_index(drop=True, inplace=True)
+
+    # Concatenate the original dataframes with the encoded features
+    train = pd.concat([train, train_encoded_df], axis=1)
+    test = pd.concat([test, test_encoded_df], axis=1)
+
+    # Drop the original Location column
+    train.drop('Location', axis=1, inplace=True)
+    test.drop('Location', axis=1, inplace=True)
+
+    return train, test
 
 def preprocess_year(train_X, test_X):
 
@@ -74,7 +98,7 @@ def preprocess_kilometers_driven(train, test):
     test.rename(columns={'Kilometers_Driven': 'Km_Driven_Scaled'}, inplace=True)
 
 def preprocess_fuel_type(train_X, test_X):
-    replace_map = {'Fuel_Type': { 'Diesel': 1, 'Petrol': 2, 'Eletric': 3}}
+    replace_map = {'Fuel_Type': { 'Diesel': 1, 'Petrol': 2, 'Electric': 3}}
     train_X.replace(replace_map, inplace=True)
     test_X.replace(replace_map, inplace=True)
 
