@@ -37,8 +37,12 @@ preprocess_kilometers_driven(train, test)
 #falta
 preprocess_transmission(train, test)
 preprocess_fuel_type(train, test)
+
+
 train, test = preprocess_location(train, test)
-preprocess_mileage(train, test)
+train, test = preprocess_mileage(train, test)
+
+
 
 print(train.head())
 print(test.head())

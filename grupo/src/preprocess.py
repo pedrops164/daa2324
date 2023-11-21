@@ -152,9 +152,12 @@ def preprocess_mileage(train_X, test_X):
             m = m[:-5]
             MileageKMPLTest.append(float(m))
         pass
-
-    train_X['Mileage']=MileageKMPL
-    test_X['Mileage']=MileageKMPLTest
+    
+    train_X.loc[:,'Mileage']=MileageKMPL
+    test_X.loc[:,'Mileage']=MileageKMPLTest
+    train_X['Mileage'] = pd.to_numeric(train_X['Mileage'], errors='coerce')
+    test_X['Mileage'] = pd.to_numeric(test_X['Mileage'], errors='coerce')
+    return train_X, test_X
 
 def preprocess_engine(train_X, test_X):
     # TODO
@@ -191,7 +194,8 @@ def preprocess_engine(train_X, test_X):
 
     train_X['Engine'] = train_X['Engine'].astype(int)
     test_X['Engine'] = test_X['Engine'].astype(int)
-
+    
+    
 
 def preprocess_power(train_X, test_X):
     # TODO
