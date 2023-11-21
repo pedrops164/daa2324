@@ -38,10 +38,7 @@ preprocess_kilometers_driven(train, test)
 preprocess_transmission(train, test)
 preprocess_fuel_type(train, test)
 train, test = preprocess_location(train, test)
-#preprocess_mileage(train, test)
-
-train.drop(columns=['Mileage'], inplace=True, axis=1)
-test.drop(columns=['Mileage'], inplace=True, axis=1)
+preprocess_mileage(train, test)
 
 print(train.head())
 print(test.head())

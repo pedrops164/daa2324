@@ -117,6 +117,8 @@ def preprocess_owner_type(train_X, test_X):
     test_X.replace(replace_map, inplace=True)
 
 def preprocess_mileage(train_X, test_X):
+    train_X = train_X[train_X['Mileage'].notna()]
+    test_X = test_X[test_X['Mileage'].notna()]
     MileageKMPL = []
 
     for index,row in train_X.iterrows():
