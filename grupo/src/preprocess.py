@@ -92,7 +92,7 @@ def preprocess_kilometers_driven(train, test):
     # We scale the kilometers driven so that the feature has a mean of 0 and std deviation of 1 (z-score normalization)
     scaler = StandardScaler()
     train['Kilometers_Driven'] = scaler.fit_transform(train[['Kilometers_Driven']])
-    test['Kilometers_Driven'] = scaler.fit_transform(test[['Kilometers_Driven']])
+    test['Kilometers_Driven'] = scaler.transform(test[['Kilometers_Driven']])
 
     train.rename(columns={'Kilometers_Driven': 'Km_Driven_Scaled'}, inplace=True)
     test.rename(columns={'Kilometers_Driven': 'Km_Driven_Scaled'}, inplace=True)
