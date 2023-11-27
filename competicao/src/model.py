@@ -14,6 +14,17 @@ train_meteo = pd.concat([df_meteo_2021, df_meteo_2022])
 test_energia_X = pd.read_csv('../input/energia_202301-202304.csv', encoding='latin-1')
 test_meteo_X = pd.read_csv('../input/meteo_202301-202304.csv', encoding='latin-1')
 
+'''
+Rename columns
+'''
+train_energia.rename(columns={"Data": "data", "Hora": "hora", "Normal (kWh)": "normal", "Horário Económico (kWh)": "horario",
+                               "Autoconsumo (kWh)": "autoconsumo", "Injeção na rede (kWh)": "injecao"}, inplace=True)
+print(train_energia.describe())
+print(train_energia.nunique())
+
+print(train_energia.columns)
+print(train_meteo.columns)
+
 # Prepressing energia dataset
 preprocess_data(train_energia, test_energia_X)
 preprocess_hora(train_energia, test_energia_X)
@@ -25,7 +36,7 @@ preprocess_injecao(train_energia, test_energia_X)
 # Prepressing meteo dataset
 preprocess_dt(train_meteo, test_meteo_X)
 preprocess_dtiso(train_meteo, test_meteo_X)
-preprocess_cityname(train_meteo, test_meteo_X)
+preprocess_city_name(train_meteo, test_meteo_X)
 preprocess_temp(train_meteo, test_meteo_X)
 preprocess_feelslike(train_meteo, test_meteo_X)
 preprocess_temp_min(train_meteo, test_meteo_X)
@@ -38,3 +49,6 @@ preprocess_wind_speed(train_meteo, test_meteo_X)
 preprocess_rain1h(train_meteo, test_meteo_X)
 preprocess_clouds_all(train_meteo, test_meteo_X)
 preprocess_weather_description(train_meteo, test_meteo_X)
+
+print(train_energia.columns)
+print(train_meteo.columns)
