@@ -1,9 +1,16 @@
 import pandas as pd
+from sklearn import preprocessing
 
 # PREPROCESSAMENTO ENERGIA
 
 def preprocess_data(train, test_X):
-    pass
+    train['data'] = pd.to_datetime(train['data']).dt.date
+    test_X['data'] = pd.to_datetime(test_X['data']).dt.date
+    
+    train['weekday'] = pd.to_datetime(train['data']).dt.weekday
+    train['monthday'] = pd.to_datetime(train['data']).dt.day
+    test_X['weekday'] = pd.to_datetime(test_X['data']).dt.weekday
+    test_X['monthday'] = pd.to_datetime(test_X['data']).dt.day
 
 def preprocess_hora(train, test_X):
     pass
@@ -48,7 +55,9 @@ def preprocess_temp_max(train, test_X):
     pass
 
 def preprocess_pressure(train, test_X):
-    pass
+    train["pressure"] = preprocessing.normalize([train["pressure"]])[0]
+    test_X["pressure"] = preprocessing.normalize([test_X["pressure"]])[0]
+
 
 def preprocess_sea_level(train, test_X):
     # all entries are null values
@@ -59,7 +68,9 @@ def preprocess_grnd_level(train, test_X):
     train.drop(["grnd_level"], inplace=True, axis=1)
 
 def preprocess_humidity(train, test_X):
-    pass
+    train["humidity"] = preprocessing.normalize([train["humidity"]])[0]
+    test_X["humidity"] = test_X.normalize([train["humidity"]])[0]
+    
 
 def preprocess_wind_speed(train, test_X):
     pass
