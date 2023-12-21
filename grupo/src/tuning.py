@@ -24,6 +24,7 @@ def best_params(objective_func, search_space):
     return best 
 
 def bestparams_cb(X, y):
+    # best parameters for cat boost regressor
     cb_search_space = {'learning_rate': hp.uniform('learning_rate', 0.01, 0.05),
                     'iterations': hp.randint('iterations',100,1000),
                     'l2_leaf_reg': hp.randint('l2_leaf_reg',1,10),
@@ -44,6 +45,7 @@ def bestparams_cb(X, y):
     return best_params(objective_func, cb_search_space)
 
 def bestparams_lgbm(X, y):
+    # best parameters for lightgbm
     lgbm_search_space = {
         'num_leaves': hp.quniform('num_leaves', 10, 100, 10),
         'min_child_samples': hp.quniform('min_child_samples', 20, 200, 10),
@@ -61,6 +63,7 @@ def bestparams_lgbm(X, y):
     return best_params(objective_func, lgbm_search_space)
 
 def best_params_gradientboost(X, y):
+    # best parameters for gradient boost
     gr_search_space = {
         'n_estimators': hp.quniform('n_estimators', 100, 300, 50),
         'max_depth': hp.quniform('max_depth', 1, 10, 2),

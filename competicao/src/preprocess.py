@@ -69,7 +69,7 @@ def preprocess_grnd_level(train, test_X):
 
 def preprocess_humidity(train, test_X):
     train["humidity"] = preprocessing.normalize([train["humidity"]])[0]
-    test_X["humidity"] = test_X.normalize([train["humidity"]])[0]
+    test_X["humidity"] = preprocessing.normalize([test_X["humidity"]])[0]
     
 
 def preprocess_wind_speed(train, test_X):
