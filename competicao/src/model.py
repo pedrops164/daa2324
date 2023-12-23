@@ -17,40 +17,38 @@ test_meteo_X = pd.read_csv('../input/meteo_202301-202304.csv', encoding='latin-1
 '''
 Rename columns
 '''
-train_energia.rename(columns={"Data": "data", "Hora": "hora", "Normal (kWh)": "normal", "Horário Económico (kWh)": "horario",
-                               "Autoconsumo (kWh)": "autoconsumo", "Injeção na rede (kWh)": "injecao"}, inplace=True)
-test_energia_X.rename(columns={"Data": "data", "Hora": "hora", "Normal (kWh)": "normal", "Horário Económico (kWh)": "horario",
-                               "Autoconsumo (kWh)": "autoconsumo", "Injeção na rede (kWh)": "injecao"}, inplace=True)
+rename_energia(train_energia, test_energia_X)
 print(train_energia.describe())
 print(train_energia.nunique())
 
 print(train_energia.columns)
 print(train_meteo.columns)
 
+train, test = merge_by_date(train_energia, train_meteo, test_energia_X, test_meteo_X)
+
 # Prepressing energia dataset
-preprocess_data(train_energia, test_energia_X)
-preprocess_hora(train_energia, test_energia_X)
-preprocess_normal(train_energia, test_energia_X)
-preprocess_horario(train_energia, test_energia_X)
-preprocess_autoconsumo(train_energia, test_energia_X)
-preprocess_injecao(train_energia, test_energia_X)
+preprocess_data(train, test)
+preprocess_hora(train, test)
+preprocess_normal(train, test)
+preprocess_horario(train, test)
+preprocess_autoconsumo(train, test)
+preprocess_injecao(train, test)
 
 # Prepressing meteo dataset
-preprocess_dt(train_meteo, test_meteo_X)
-preprocess_dtiso(train_meteo, test_meteo_X)
-preprocess_city_name(train_meteo, test_meteo_X)
-preprocess_temp(train_meteo, test_meteo_X)
-preprocess_feelslike(train_meteo, test_meteo_X)
-preprocess_temp_min(train_meteo, test_meteo_X)
-preprocess_temp_max(train_meteo, test_meteo_X)
-preprocess_pressure(train_meteo, test_meteo_X)
-preprocess_sea_level(train_meteo, test_meteo_X)
-preprocess_grnd_level(train_meteo, test_meteo_X)
-preprocess_humidity(train_meteo, test_meteo_X)
-preprocess_wind_speed(train_meteo, test_meteo_X)
-preprocess_rain1h(train_meteo, test_meteo_X)
-preprocess_clouds_all(train_meteo, test_meteo_X)
-preprocess_weather_description(train_meteo, test_meteo_X)
+preprocess_dt(train, test)
+preprocess_dtiso(train, test)
+preprocess_city_name(train, test)
+preprocess_temp(train, test)
+preprocess_feelslike(train, test)
+preprocess_temp_min(train, test)
+preprocess_temp_max(train, test)
+preprocess_pressure(train, test)
+preprocess_sea_level(train, test)
+preprocess_grnd_level(train, test)
+preprocess_humidity(train, test)
+preprocess_wind_speed(train, test)
+preprocess_rain1h(train, test)
+preprocess_clouds_all(train, test)
+preprocess_weather_description(train, test)
 
-print(train_energia.columns)
-print(train_meteo.columns)
+print(train.columns)
