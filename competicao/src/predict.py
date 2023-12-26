@@ -1,14 +1,17 @@
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 from catboost import CatBoostRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import ElasticNet
+from sklearn.model_selection import cross_validate
 from tuning import *
+import matplotlib.pyplot as plt
+import os
 
 #Tensorflow
 from tensorflow.keras.models import Sequential
@@ -16,8 +19,6 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 
 from util import random_state, cross_val_score
-
-
 
 def print_best_models(X, y):
     mae_df, mse_df, r2_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
@@ -29,23 +30,20 @@ def print_best_models(X, y):
     model_list = []
 
     models = [
-        ('lin_reg', LinearRegression()),
-        ('ridge', Ridge()),
-        ('lasso', Lasso()),
-        ('elastic_net', ElasticNet()),
-        ('knn', KNeighborsRegressor()),
-        #('mlp', KerasRegressor(build_fn=create_mlp_model, train=X, epochs=100, batch_size=10, verbose=0)),
+        #('knn', KNeighborsRegressor()),
+        #('mlp', MLPRegressor(random_state=random_state, hidden_layer_sizes=(100,100,100), early_stopping=True,
+        #                     learning_rate='adaptive', batch_size=32, alpha=0.001)),
         ('rf', RandomForestRegressor(random_state=random_state)),
         ('gb', GradientBoostingRegressor(random_state=random_state)),
-        ('svr', SVR()),
+        #('svr', SVR()),
         ('xgb', XGBRegressor(random_state=random_state, enable_categorical=True)),
-        ('lgb', LGBMRegressor(random_state=random_state, verbose=0)),
+        ('lgb', LGBMRegressor(random_state=random_state, verbose=0, learning_rate=0.01,
+                              lambda_l1=1, lambda_l2=1, n_estimators=1500)),
         ('cb', CatBoostRegressor(random_state=random_state, verbose=0))
     ]
 
     for (label, model) in models:
-        model, accuracy = cross_val_score(model, X, y, label=label)
-        
+        model, accuracy, mae = cross_val_score(model, X, y, label=label)
         model_list.append((label, model, accuracy))
 
     best_model_entry = max(model_list, key=lambda x: x[2])
@@ -55,6 +53,24 @@ def print_best_models(X, y):
 
     print(f"Best Model: {best_model_label} with Accuracy: {best_accuracy}")
     return best_model
+
+def plot_learning_curve(train_error, validation_error, label, output_dir):
+    plt.figure()
+    plt.plot(train_error, label='Training Error')
+    plt.plot(validation_error, label='Validation Error')
+    plt.title(f'Learning Curve for {label}')
+    plt.xlabel('Epochs')
+    plt.ylabel('Mean Absolute Error')
+    plt.legend()
+
+    # Constructing the file name
+    file_name = f"{label}_learning_curve.png"
+    file_path = os.path.join(output_dir, file_name)
+
+    # Saving the plot to a file
+    plt.savefig(file_path)
+    print(f"Plot saved to {file_path}")
+    plt.close()  # Close the plot to free up memory
 
 def create_mlp_model(train):
     # Create model
@@ -112,15 +128,23 @@ def train_model(X, y):
         ('gradient boost', gr_reg),
         ('cat boost', cb_reg),
     ]
-    best_scores = []
+    best_models = []
     for (label, model) in models:
-        best_scores.append(cross_val_score(model, X, y, label=label))
+        model, accuracy, mae = cross_val_score(model, X, y, label=label)
+        best_models.append((label, model, accuracy))
 
-    print(best_scores)
+    best_model = max(best_models, key=lambda x: x[2])
+    best_model_label = best_model[0]
+    best_accuracy = best_model[2]
+    best_model = best_model[1]
+
+    print(f"Best Model: {best_model_label} with Accuracy: {best_accuracy}")
+    return best_model
+
 
 def submit_prediction(y_pred, output_path):
     # Define the inverse of the order_mapping to translate back from numeric predictions to string labels
-    inverse_order_mapping = {1: 'None', 2: 'Low', 3: 'Medium', 4: 'High', 5: 'Very High'}
+    inverse_order_mapping = {0: 'None', 1: 'Low', 2: 'Medium', 3: 'High', 4: 'Very High'}
 
     # Map the predictions to their corresponding labels
     y_pred_labels = [inverse_order_mapping[pred] for pred in y_pred]

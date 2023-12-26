@@ -40,7 +40,8 @@ def bestparams_cb(X, y):
                                 objective='MAE',
                                 silent=True,
                                 random_state=random_state)
-        return cross_val_score(cb_reg, X, y)
+        model, acc, mae = cross_val_score(cb_reg, X, y)
+        return mae
     return best_params(objective_func, cb_search_space)
 
 def bestparams_lgbm(X, y):
@@ -58,7 +59,8 @@ def bestparams_lgbm(X, y):
                                 learning_rate=search_space['learning_rate'],
                                 n_estimators=int(search_space['n_estimators']),
                                 random_state=random_state)
-        return cross_val_score(lgbm_reg, X, y)
+        model, acc, mae = cross_val_score(lgbm_reg, X, y)
+        return mae
     return best_params(objective_func, lgbm_search_space)
 
 def best_params_gradientboost(X, y):
@@ -74,6 +76,7 @@ def best_params_gradientboost(X, y):
                                 max_depth=int(search_space['max_depth']),
                                 learning_rate=search_space['learning_rate'],
                                 random_state=random_state)
-        return cross_val_score(gr_reg, X, y)
+        model, acc, mae = cross_val_score(gr_reg, X, y)
+        return mae
 
     return best_params(objective_func, gr_search_space)
