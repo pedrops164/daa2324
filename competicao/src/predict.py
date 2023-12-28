@@ -1,15 +1,16 @@
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, RandomForestClassifier, GradientBoostingClassifier
 from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
-from xgboost import XGBRegressor
-from lightgbm import LGBMRegressor
-from catboost import CatBoostRegressor
+from xgboost import XGBRegressor, XGBClassifier
+from lightgbm import LGBMRegressor, LGBMClassifier
+from catboost import CatBoostRegressor, CatBoostClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import cross_validate
 from tuning import *
+from lstm_model import ModelLSTM
 import matplotlib.pyplot as plt
 import os
 
@@ -31,19 +32,23 @@ def print_best_models(X, y):
 
     models = [
         #('knn', KNeighborsRegressor()),
-        #('mlp', MLPRegressor(random_state=random_state, hidden_layer_sizes=(100,100,100), early_stopping=True,
-        #                     learning_rate='adaptive', batch_size=32, alpha=0.001)),
-        ('rf', RandomForestRegressor(random_state=random_state)),
-        ('gb', GradientBoostingRegressor(random_state=random_state)),
-        #('svr', SVR()),
-        ('xgb', XGBRegressor(random_state=random_state, enable_categorical=True)),
-        ('lgb', LGBMRegressor(random_state=random_state, verbose=0, learning_rate=0.01,
+        #('mlp', MLPRegressor(random_state=random_state, hidden_layer_sizes=(100, 75), early_stopping=True,
+        #                     learning_rate='invscaling', batch_size=64, max_iter=50, alpha=0,
+        #                     learning_rate_init=0.0075, warm_start=True)),
+        #('lstm', ModelLSTM()),
+        ('rf', RandomForestClassifier(random_state=random_state)),
+        ('gb', GradientBoostingClassifier(random_state=random_state)),
+        ('svr', SVR()),
+        ('xgb', XGBClassifier(random_state=random_state, enable_categorical=True)),
+        ('lgb', LGBMClassifier(random_state=random_state, verbose=-1, learning_rate=0.01,
                               lambda_l1=1, lambda_l2=1, n_estimators=1500)),
-        ('cb', CatBoostRegressor(random_state=random_state, verbose=0))
+        ('cb', CatBoostClassifier(random_state=random_state, verbose=0))
     ]
 
     for (label, model) in models:
         model, accuracy, mae = cross_val_score(model, X, y, label=label)
+        #plot_learning_curve(model.loss_curve_, label, "../output/")
+        #print(model.n_iter_)
         model_list.append((label, model, accuracy))
 
     best_model_entry = max(model_list, key=lambda x: x[2])
@@ -54,14 +59,14 @@ def print_best_models(X, y):
     print(f"Best Model: {best_model_label} with Accuracy: {best_accuracy}")
     return best_model
 
-def plot_learning_curve(train_error, validation_error, label, output_dir):
+def plot_learning_curve(train_curve, label, output_dir):
     plt.figure()
-    plt.plot(train_error, label='Training Error')
-    plt.plot(validation_error, label='Validation Error')
-    plt.title(f'Learning Curve for {label}')
+    plt.figure(figsize=(10, 6))
+    plt.plot(train_curve)
+    plt.title('Learning Curve')
     plt.xlabel('Epochs')
-    plt.ylabel('Mean Absolute Error')
-    plt.legend()
+    plt.ylabel('Loss')
+    plt.grid(True)
 
     # Constructing the file name
     file_name = f"{label}_learning_curve.png"
@@ -145,7 +150,7 @@ def train_model(X, y):
 def submit_prediction(y_pred, output_path):
     # Define the inverse of the order_mapping to translate back from numeric predictions to string labels
     inverse_order_mapping = {0: 'None', 1: 'Low', 2: 'Medium', 3: 'High', 4: 'Very High'}
-
+    print(y_pred.shape)
     # Map the predictions to their corresponding labels
     y_pred_labels = [inverse_order_mapping[pred] for pred in y_pred]
 

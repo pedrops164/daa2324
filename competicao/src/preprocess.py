@@ -1,8 +1,12 @@
 import pandas as pd
 from sklearn import preprocessing
-from sklearn.preprocessing import LabelEncoder, StandardScaler, QuantileTransformer
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import LabelEncoder, StandardScaler, QuantileTransformer, MinMaxScaler
 from miceforest import ImputationKernel
 from util import random_state
+from imblearn.over_sampling import SMOTE
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.pipeline import Pipeline
 import numpy as np
 
 # Rename columns
@@ -71,6 +75,24 @@ def fill_missing_values(test_X):
     test_mice_imputation = mice_kernel.complete_data()
     return test_mice_imputation
 
+# examples implementation
+def implementation_samples(X_train, y_train):
+    smote = SMOTE(sampling_strategy={1: 1000, 2: 1000, 3: 1000, 4: 1000})
+    X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+    return X_resampled, y_resampled
+
+def overundersampling(X_train, y_train):
+    over = SMOTE(sampling_strategy={1: 1000, 2: 1000, 3: 1000, 4: 1000})  # or 'auto' for naive over-sampling
+    under = RandomUnderSampler(sampling_strategy={0: 3000})  # or 'auto' for naive under-sampling
+
+    # Create a pipeline that first oversamples then undersamples
+    pipeline = Pipeline(steps=[('o', over), ('u', under)])
+
+    # Transform the dataset
+    X_resampled, y_resampled = pipeline.fit_resample(X_train, y_train)
+    return X_resampled, y_resampled
+
+
 # PREPROCESSAMENTO ENERGIA
 
 # preprocessing of dates
@@ -80,12 +102,21 @@ def preprocess_dates(train, test_X):
     #test_X['weekday'] = pd.to_datetime(test_X['data']).dt.weekday
     #test_X['monthday'] = pd.to_datetime(test_X['data']).dt.day
 
+    train['day_of_year'] = pd.to_datetime(train['data']).dt.dayofyear
+    test_X['day_of_year'] = pd.to_datetime(test_X['data']).dt.dayofyear
+
     train.drop(["dt"], inplace=True, axis=1)
     train.drop(["dt_iso"], inplace=True, axis=1)
     train.drop(["data"], inplace=True, axis=1)
+    train.drop(["ano"], inplace=True, axis=1)
+    train.drop(["mes"], inplace=True, axis=1)
+    train.drop(["dia"], inplace=True, axis=1)
     test_X.drop(["dt"], inplace=True, axis=1)
     test_X.drop(["dt_iso"], inplace=True, axis=1)
     test_X.drop(["data"], inplace=True, axis=1)
+    test_X.drop(["ano"], inplace=True, axis=1)
+    test_X.drop(["mes"], inplace=True, axis=1)
+    test_X.drop(["dia"], inplace=True, axis=1)
 
 def preprocess_hora(train, test_X):
     pass
@@ -106,7 +137,27 @@ def preprocess_injecao(train, test_X):
     train['injecao'] = train['injecao'].map(order_mapping)
     #le = LabelEncoder()
     #train['injecao'] = le.fit_transform(train['injecao'])
-    pass
+
+    # we one hot encode the categorical variable
+    #ohe_train = pd.get_dummies(train['injecao'], prefix='injecao')
+    #train = train.join(ohe_train)
+    #train.drop(['injecao'], axis=1, inplace=True)
+    #return train, test_X
+
+
+def fe_energia(train, test_X):
+    # criacao de features compostas
+    train['horario_autoconsumo'] = train['horario'] * train['autoconsumo']
+    test_X['horario_autoconsumo'] = test_X['horario'] * test_X['autoconsumo']
+
+    train['normal_horario'] = train['normal'] * train['horario']
+    test_X['normal_horario'] = test_X['normal'] * test_X['horario']
+    
+    train['hora_horario'] = train['hora'] * train['horario']
+    test_X['hora_horario'] = test_X['hora'] * test_X['horario']
+
+    train['hora_normal'] = train['hora'] * train['normal']
+    test_X['hora_normal'] = test_X['hora'] * test_X['normal']
 
 
 # PREPROCESSAMENTO METEO
@@ -147,23 +198,10 @@ def preprocess_temp_max(train, test_X):
 
 def preprocess_pressure(train, test_X):
     # Fill missing values with median
-    pressure_median = train['pressure'].median()
-    train['pressure'].fillna(pressure_median, inplace=True)
-    test_X['pressure'].fillna(pressure_median, inplace=True)
-
-    # z score standardization
-    # Create a StandardScaler object
-    #scaler = StandardScaler()
-
-    # quantile transformer
-    scaler = QuantileTransformer(output_distribution="normal", random_state=random_state)
-
-    # Fit the scaler to the train data and transform train data
-    train['pressure'] = scaler.fit_transform(train[['pressure']])
-
-    # Transform test data using the same scaler
-    test_X['pressure'] = scaler.transform(test_X[['pressure']])
-
+    #pressure_median = train['pressure'].median()
+    #train['pressure'].fillna(pressure_median, inplace=True)
+    #test_X['pressure'].fillna(pressure_median, inplace=True)
+    pass
 
 def preprocess_sea_level(train, test_X):
     # all entries are null values
@@ -180,19 +218,7 @@ def preprocess_humidity(train, test_X):
     #humidity_mean = train['humidity'].mean()
     #train['humidity'].fillna(humidity_mean, inplace=True)
     #test_X['humidity'].fillna(humidity_mean, inplace=True)
-
-    # z score standardization
-    # Create a StandardScaler object
-    #scaler = StandardScaler()
-
-    # quantile transformer
-    scaler = QuantileTransformer(output_distribution="normal", random_state=random_state)
-    
-    # Fit the scaler to the train data and transform train data
-    train['humidity'] = scaler.fit_transform(train[['humidity']])
-
-    # Transform test data using the same scaler
-    test_X['humidity'] = scaler.transform(test_X[['humidity']])    
+    pass
 
 def preprocess_wind_speed(train, test_X):
     # Fill missing values with mean
@@ -234,3 +260,88 @@ def preprocess_weather_description(train, test_X):
     test_X.drop("weather_description", axis=1, inplace=True)
 
     return train, test_X
+
+def scale_features(train, test_X):
+    features=['hora','normal','horario','autoconsumo','temp','feels_like','temp_min','temp_max','pressure',
+              'humidity','wind_speed','clouds_all','day_of_year','temp_diff']
+    for feature in features:
+        # quantile transformer
+        #scaler = QuantileTransformer(output_distribution="normal", random_state=random_state)
+        # minmax scaling
+        #scaler = MinMaxScaler()
+        # standard scaling
+        scaler = StandardScaler()
+
+        # Fit the scaler to the train data and transform train data
+        train[feature] = scaler.fit_transform(train[[feature]])
+
+        # Transform test data using the same scaler
+        test_X[feature] = scaler.transform(test_X[[feature]])
+
+def remove_outliers(train):
+    cols = ['normal','horario','autoconsumo','temp','feels_like','temp_min','temp_max','humidity','wind_speed','clouds_all',
+            'temp_diff']
+
+    # Define a dictionary to hold the outlier indices for each column
+    outlier_indices = {}
+
+    # Loop over each column in the DataFrame
+    for column in cols:
+        # Calculate Q1 (25th percentile) and Q3 (75th percentile) for the given column
+        Q1 = train[column].quantile(0.25)
+        Q3 = train[column].quantile(0.75)
+        # Calculate the IQR (Interquartile Range)
+        IQR = Q3 - Q1
+        # Define the range for outliers as 1.5 times the IQR from the Q1 and Q3
+        outlier_step = 1.5 * IQR
+        # Find the indices of outliers in the column and add them to the dictionary
+        outlier_list_col = train[(train[column] < Q1 - outlier_step) | (train[column] > Q3 + outlier_step)].index
+        outlier_indices[column] = outlier_list_col
+
+    # Find the list of unique indices that have outliers in more than one column
+    # This step is optional and depends on whether you want to be strict about outlier removal
+    outliers = []
+    for idx_list in outlier_indices.values():
+        for idx in idx_list:
+            if idx not in outliers:
+                outliers.append(idx)
+
+    print(len(outliers))
+    # Drop the outliers and return the DataFrame without outliers
+    df_cleaned = train.drop(outliers)
+    return df_cleaned
+
+# Achieves slightly better results
+def remove_outliers_isolation_forest(train, contamination_factor=0.01):
+    cols = ['normal','horario','autoconsumo','temp','feels_like','temp_min','temp_max','humidity','wind_speed','clouds_all',
+            'temp_diff']
+    
+    # We will collect the indices of rows considered inliers by IsolationForest for all specified columns
+    inlier_indices = []
+
+    for col in cols:
+        # Initialize the IsolationForest model
+        iso_forest = IsolationForest(contamination=contamination_factor, random_state=42)
+
+        # Reshape the data to fit the model: it should be 2D (samples, features)
+        col_data = train[col].values.reshape(-1, 1)
+        
+        # Fit the model
+        iso_forest.fit(col_data)
+
+        # Predict the anomalies
+        preds = iso_forest.predict(col_data)
+
+        # Store the indices of inliers (where preds == 1)
+        inlier_indices.append(train[col][preds == 1].index)
+
+    # Find the intersection of all inlier indices
+    inliers_common = set(inlier_indices[0])
+    for indices in inlier_indices[1:]:
+        inliers_common.intersection_update(indices)
+
+    # Convert the set of inlier indices to a list
+    inliers_common = list(inliers_common)
+
+    # Return the dataframe with only the inliers
+    return train.loc[inliers_common].reset_index(drop=True)

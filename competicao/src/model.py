@@ -4,6 +4,7 @@ from preprocess import *
 import numpy as np
 from predict import train_model, print_best_models, submit_prediction
 from ensemble import EnsembleModel
+from grid_search import grid_search
 
 pd.set_option('display.max_columns', None)
 
@@ -25,6 +26,11 @@ Rename columns
 rename_energia(train_energia, test_energia_X)
 train, test = merge_by_date(train_energia, train_meteo, test_energia_X, test_meteo_X)
 
+# Define hours to remove
+#hours_to_remove = [0, 1, 2, 3, 4, 5, 20, 21, 22, 23]
+# Filter the DataFrame to keep only the rows where 'hora' is not in the hours_to_remove list
+#train = train[~train['hora'].isin(hours_to_remove)]
+
 # Prepressing energia dataset
 preprocess_dates(train, test)
 preprocess_hora(train, test)
@@ -32,6 +38,7 @@ preprocess_normal(train, test)
 preprocess_horario(train, test)
 preprocess_autoconsumo(train, test)
 preprocess_injecao(train, test)
+#fe_energia(train, test)
 
 # Prepressing meteo dataset
 preprocess_city_name(train, test)
@@ -47,28 +54,33 @@ preprocess_wind_speed(train, test)
 preprocess_rain1h(train, test)
 preprocess_clouds_all(train, test)
 train, test = preprocess_weather_description(train, test)
+# scale / normalize all features
+scale_features(train,test)
+train = remove_outliers_isolation_forest(train)
 
 # fill missing values
-test.to_csv("../output/intermediate_test_1.csv", index=False)
 test = fill_missing_values(test)
-test.to_csv("../output/intermediate_test_2.csv", index=False)
 
-print(train.describe())
-print(train.nunique())
-print(train.info())
-print()
-print(test.describe())
-print(test.nunique())
-print(test.info())
+#print(train.describe())
+#print(train.nunique())
+#print(train.info())
+#print()
+#print(test.describe())
+#print(test.nunique())
+#print(test.info())
 
-train_X = train.drop(["injecao"], axis=1)
+target_col = ["injecao"]
+train_X = train.drop(target_col, axis=1)
 train_y = train["injecao"]
+
+#train_X, train_y = implementation_samples(train_X, train_y)
 
 #best_model = EnsembleModel()
 #best_model.fit(train_X, train_y)
 #y_pred_rounded = best_model.predict(test)
 
 best_model = print_best_models(train_X, train_y)
+#best_model = grid_search(train_X, train_y)
 y_pred = best_model.predict(test)
 y_pred_rounded = np.round(y_pred).astype(int)
 submit_prediction(y_pred_rounded, "../output/submission.csv")
