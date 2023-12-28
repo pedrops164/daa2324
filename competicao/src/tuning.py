@@ -84,28 +84,25 @@ def best_params_gradientboost(X, y):
 
 def best_params_random_forest(X, y):
     rf_search_space = {
-        'n_estimators': hp.quniform('n_estimators', 50, 200, 10),
-        'max_depth': hp.quniform('max_depth', 5, 30, 1),
-        'min_samples_split': hp.uniform('min_samples_split', 0.1, 1.0),
-        'min_samples_leaf': hp.uniform('min_samples_leaf', 0.1, 0.5),
-        'max_features': hp.choice('max_features', ['auto', 'sqrt', 'log2', None])
+        'n_estimators': hp.quniform('n_estimators', 100, 500, 50),
+        'max_depth': hp.quniform('max_depth', 10, 15, 20),
+        'min_samples_split': hp.quniform('min_samples_split', 2, 5, 1),
+        'min_samples_leaf': hp.quniform('min_samples_leaf', 2, 6, 1),
+        'max_features': hp.uniform('max_features', 0.1, 1.0)
     }
 
     def objective_func(search_space):
         rf_regressor = RandomForestRegressor(
             n_estimators=int(search_space['n_estimators']),
             max_depth=int(search_space['max_depth']),
-            min_samples_split=search_space['min_samples_split'],
-            min_samples_leaf=search_space['min_samples_leaf'],
+            min_samples_split=int(round(search_space['min_samples_split'])),
+            min_samples_leaf=int(search_space['min_samples_leaf']),
             max_features=search_space['max_features'],
             random_state=2023
         )
 
-        mae_scores = cross_val_score(rf_regressor, X, y, cv=5, scoring='neg_mean_absolute_error')
-        
-        # Temos que garantir que a lib Hyperopt está a minimizar o mean absolute error negativo
-        return -np.mean(mae_scores)
+        model, acc, mae = cross_val_score(rf_regressor, X, y)
+        return mae
 
-    best_params_rf = best_params(objective_func, rf_search_space)
+    return best_params(objective_func, rf_search_space)
 
-    return best_params_rf, objective_func(best_params_rf)

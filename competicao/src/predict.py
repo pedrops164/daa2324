@@ -136,18 +136,18 @@ def train_model(X, y):
     rf_reg = RandomForestRegressor(
         n_estimators=int(rf_best['n_estimators']),
         max_depth=int(rf_best['max_depth']),
-        min_samples_split=rf_best['min_samples_split'],
-        min_samples_leaf=rf_best['min_samples_leaf'],
+        min_samples_split=int(rf_best['min_samples_split']),
+        min_samples_leaf=int(rf_best['min_samples_leaf']),
         max_features=rf_best['max_features'],
-        random_state=2023
-)
+        bootstrap=True,
+        random_state=random_state)
     
     models = [lgbm_reg, gr_reg, cb_reg, rf_reg]
     models = [
         ('lgbm', lgbm_reg),
         ('gradient boost', gr_reg),
         ('cat boost', cb_reg),
-        ('random forest', rf_reg),
+        ('random forest', rf_reg)
     ]
     best_models = []
     for (label, model) in models:

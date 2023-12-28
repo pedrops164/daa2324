@@ -5,20 +5,43 @@ import numpy as np
 from predict import train_model, print_best_models, submit_prediction
 from ensemble import EnsembleModel
 from grid_search import grid_search
+import os
 
 pd.set_option('display.max_columns', None)
 
+script_dir = os.path.dirname(__file__)
+file_path1 = os.path.join(script_dir, '../input/energia_202109-202112.csv')
+df_energia_2021 = pd.read_csv(file_path1, encoding='latin-1', na_filter=False)
+
+file_path2 = os.path.join(script_dir, '../input/energia_202201-202212.csv')
+df_energia_2022 = pd.read_csv(file_path2, encoding='latin-1', na_filter=False)
+
+file_path3 = os.path.join(script_dir, '../input/meteo_202109-202112.csv')
+df_meteo_2021 = pd.read_csv(file_path3, encoding='latin-1', na_values=["", "NaN", ""])
+
+file_path4 = os.path.join(script_dir, '../input/meteo_202201-202212.csv')
+df_meteo_2022 = pd.read_csv(file_path4, encoding='latin-1', na_values=["", "NaN", ""])
+
+file_path5 = os.path.join(script_dir, '../input/energia_202301-202304.csv')
+
+file_path6 = os.path.join(script_dir, '../input/meteo_202301-202304.csv')
+
+output_path = os.path.join(script_dir, '../output/submission.csv')
+
 # Load input csv (energia and meteo)
-df_energia_2021 = pd.read_csv('../input/energia_202109-202112.csv', encoding='latin-1', na_filter = False)
-df_energia_2022 = pd.read_csv('../input/energia_202201-202212.csv', encoding='latin-1', na_filter = False)
-df_meteo_2021 = pd.read_csv('../input/meteo_202109-202112.csv', encoding='latin-1', na_values=["", "NaN", ""])
-df_meteo_2022 = pd.read_csv('../input/meteo_202201-202212.csv', encoding='latin-1', na_values=["", "NaN", ""])
+#df_energia_2021 = pd.read_csv('../input/energia_202109-202112.csv', encoding='latin-1', na_filter = False)
+#df_energia_2022 = pd.read_csv('../input/energia_202201-202212.csv', encoding='latin-1', na_filter = False)
+#df_meteo_2021 = pd.read_csv('../input/meteo_202109-202112.csv', encoding='latin-1', na_values=["", "NaN", ""])
+#df_meteo_2022 = pd.read_csv('../input/meteo_202201-202212.csv', encoding='latin-1', na_values=["", "NaN", ""])
 
 train_energia = pd.concat([df_energia_2021, df_energia_2022])
 train_meteo = pd.concat([df_meteo_2021, df_meteo_2022])
 
-test_energia_X = pd.read_csv('../input/energia_202301-202304.csv', encoding='latin-1')
-test_meteo_X = pd.read_csv('../input/meteo_202301-202304.csv', encoding='latin-1')
+test_energia_X = pd.read_csv(file_path5, encoding='latin-1')
+test_meteo_X = pd.read_csv(file_path6, encoding='latin-1')
+
+#test_energia_X = pd.read_csv('../input/energia_202301-202304.csv', encoding='latin-1')
+#test_meteo_X = pd.read_csv('../input/meteo_202301-202304.csv', encoding='latin-1')
 
 '''
 Rename columns
@@ -83,4 +106,4 @@ best_model = train_model(train_X, train_y)
 #best_model = grid_search(train_X, train_y)
 y_pred = best_model.predict(test)
 y_pred_rounded = np.round(y_pred).astype(int)
-submit_prediction(y_pred_rounded, "../output/submission.csv")
+submit_prediction(y_pred_rounded, output_path)
