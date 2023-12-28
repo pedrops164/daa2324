@@ -15,9 +15,14 @@ import matplotlib.pyplot as plt
 import os
 
 #Tensorflow
+
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import cross_val_score
+#from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
+from scikeras.wrappers import KerasRegressor
 
 from util import random_state, cross_val_score
 
@@ -98,11 +103,12 @@ def train_model(X, y):
     - lgbm regressor
     - cat boost regressor
 
-    So we are going to tune the hyperparameters of each of these models, and then ensemble them
+    So we are going to tune the hypermeters of each of these models, and then ensemble them
     '''
     cb_best = bestparams_cb(X, y)
     lgbm_best = bestparams_lgbm(X, y)
     gr_best = best_params_gradientboost(X, y)
+    rf_best = best_params_random_forest(X, y)
 
     lgbm_reg = LGBMRegressor(learning_rate=lgbm_best['learning_rate'],
                             min_child_samples=int(lgbm_best['min_child_samples']),
@@ -127,11 +133,21 @@ def train_model(X, y):
                                 silent=True,
                                 random_state=random_state)
     
-    models = [lgbm_reg, gr_reg, cb_reg]
+    rf_reg = RandomForestRegressor(
+        n_estimators=int(rf_best['n_estimators']),
+        max_depth=int(rf_best['max_depth']),
+        min_samples_split=rf_best['min_samples_split'],
+        min_samples_leaf=rf_best['min_samples_leaf'],
+        max_features=rf_best['max_features'],
+        random_state=2023
+)
+    
+    models = [lgbm_reg, gr_reg, cb_reg, rf_reg]
     models = [
         ('lgbm', lgbm_reg),
         ('gradient boost', gr_reg),
         ('cat boost', cb_reg),
+        ('random forest', rf_reg),
     ]
     best_models = []
     for (label, model) in models:

@@ -79,7 +79,7 @@ train_y = train["injecao"]
 #best_model.fit(train_X, train_y)
 #y_pred_rounded = best_model.predict(test)
 
-best_model = print_best_models(train_X, train_y)
+best_model = train_model(train_X, train_y)
 #best_model = grid_search(train_X, train_y)
 y_pred = best_model.predict(test)
 y_pred_rounded = np.round(y_pred).astype(int)
