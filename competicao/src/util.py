@@ -30,7 +30,7 @@ def plot_learning_curve(train_curve, label, output_dir):
 def cross_val_score(model, X, y, label='', print_conf_matrix=False):  
     # Calculates the cross validation score of a given model with different metrics
 
-    cv = KFold(n_splits=2, shuffle=True, random_state=random_state)
+    cv = KFold(n_splits=5, shuffle=True, random_state=random_state)
 
     # mae is Mean Absolute Error
     acc_val_list, acc_train_list = [], []
