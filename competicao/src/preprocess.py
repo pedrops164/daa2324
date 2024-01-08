@@ -243,6 +243,10 @@ def preprocess_clouds_all(train, test_X):
     #test_X['clouds_all'].fillna(clouds_all_mean, inplace=True)
     pass
 
+def add_temp_times_humidity(train, test_x):
+    train['temp*-humidity'] = train['temp'] * -train['humidity']
+    test_x['temp*-humidity'] = test_x['temp'] * -test_x['humidity']
+
 def preprocess_weather_description(train, test_X):
     # since the weather_description column only has 8 possible values, one hot encode it
 
@@ -454,6 +458,7 @@ def all_preprocessing(train, test, remove_night_hours):
     preprocess_wind_speed(train, test)
     preprocess_rain1h(train, test)
     preprocess_clouds_all(train, test)
+    add_temp_times_humidity(train, test)
     train, test = preprocess_weather_description(train, test)
     # scale / normalize all features
     remove_redundant_features(train,test)
@@ -466,6 +471,10 @@ def all_preprocessing(train, test, remove_night_hours):
     # fill missing values
     test = fill_missing_values(test)
 
+    test.drop(['wd_sky is clear', 'wd_scattered clouds', 'wd_broken clouds', 'wd_few clouds', 'wd_heavy intensity rain', 'wd_light rain', 'wd_moderate rain', 'wd_overcast clouds'], axis=1, inplace=True)
+    train.drop(['wd_sky is clear', 'wd_scattered clouds', 'wd_broken clouds', 'wd_few clouds', 'wd_heavy intensity rain', 'wd_light rain', 'wd_moderate rain', 'wd_overcast clouds'], axis=1, inplace=True)
+    
+
     #print(train.describe())
     #print(train.nunique())
     #print(train.info())
@@ -473,6 +482,8 @@ def all_preprocessing(train, test, remove_night_hours):
     #print(test.describe())
     #print(test.nunique())
     #print(test.info())
+
+    train.to_csv('../output/post_pre.csv')
 
     target_col = ["injecao"]
     train_X = train.drop(target_col, axis=1)
@@ -505,6 +516,7 @@ def data_preparation():
 def data_prep_process_split(remove_night_hours=True):
     train, test = data_preparation()
     train_X, train_y, test_X = all_preprocessing(train, test, remove_night_hours)
+    
 
     # Count the occurrences of each value in 'injecao' column
     injecao_counts = train_y.value_counts()
