@@ -53,17 +53,17 @@ def get_best_model(X, y, X_valid=None, y_valid=None):
     best_model = best_model_entry[1]
 
     print(f"Best Model: {best_model_label} with Accuracy: {best_accuracy}")
-    return best_model
+    return best_model, best_accuracy
 
 if __name__== '__main__':
     # prepares data (all preprocessing included)
-    train_X, train_y, test_X = data_preparation()
+    train_X, train_y, test_X = data_prep_process_split()
 
     # splits training set into training + validation set
     #train_X, valid_X, train_y, valid_y = train_test_split(train_X, train_y, test_size=0.33, random_state=42)
 
     # gets the best model, without hyper parameter search
-    best_model = get_best_model(train_X, train_y)
+    best_model, acc = get_best_model(train_X, train_y)
     # predicts the target label
     y_pred = best_model.predict(test_X)
     # rounds the target label

@@ -30,7 +30,7 @@ def plot_learning_curve(train_curve, label, output_dir):
 def cross_val_score(model, X, y, label='', print_conf_matrix=False):  
     # Calculates the cross validation score of a given model with different metrics
 
-    cv = KFold(n_splits=2, shuffle=True, random_state=random_state)
+    cv = KFold(n_splits=3, shuffle=True, random_state=random_state)
 
     # mae is Mean Absolute Error
     acc_val_list, acc_train_list = [], []
@@ -105,7 +105,7 @@ def hold_out_validation(model, X_train, y_train, X_validation, y_validation, lab
             binary_conf_matrix = confusion_matrix(true_binary, pred_binary, labels=[1, 0])
             binary_conf_matrices[class_label] = binary_conf_matrix
 
-    # Calculate Mean Absolute Error and Accuracy for validation data
+    # Calculate Accuracy for validation and training sets
     acc_val = accuracy_score(y_validation, val_preds_rounded)
     acc_train = accuracy_score(y_train, train_preds_rounded)
 

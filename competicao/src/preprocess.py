@@ -67,14 +67,21 @@ def merge_by_date(train_energia_df, train_meteo_df, test_energia_df, test_meteo_
 
 # fill the missing values
 def fill_missing_values(test_X):
-    mice_kernel = ImputationKernel(
-    data = test_X,
-    save_all_iterations = True,
-    random_state = random_state)
+    # Check if there are any missing values in the dataset
+    if test_X.isna().any().any():
+        # If there are missing values, apply the imputation
+        mice_kernel = ImputationKernel(
+            data=test_X,
+            save_all_iterations=True,
+            random_state=random_state
+        )
 
-    mice_kernel.mice(3)
-    test_mice_imputation = mice_kernel.complete_data()
-    return test_mice_imputation
+        mice_kernel.mice(3)
+        test_mice_imputation = mice_kernel.complete_data()
+        return test_mice_imputation
+    else:
+        # If there are no missing values, return the original dataset
+        return test_X
 
 # examples implementation
 def implementation_samples(X_train, y_train):
@@ -133,18 +140,13 @@ def preprocess_horario(train, test_X):
 def preprocess_autoconsumo(train, test_X):
     pass
 
-def preprocess_injecao(train, test_X):
+def preprocess_injecao(train, test):
     # injecao na rede
     order_mapping = {'None': 0, 'Low': 1, 'Medium': 2, 'High': 3, 'Very High': 4}
     train['injecao'] = train['injecao'].map(order_mapping)
-    #le = LabelEncoder()
-    #train['injecao'] = le.fit_transform(train['injecao'])
 
-    # we one hot encode the categorical variable
-    #ohe_train = pd.get_dummies(train['injecao'], prefix='injecao')
-    #train = train.join(ohe_train)
-    #train.drop(['injecao'], axis=1, inplace=True)
-    #return train, test_X
+    if 'injecao' in test.columns:
+        test['injecao'] = test['injecao'].map(order_mapping)
 
 
 def fe_energia(train, test_X):
@@ -459,7 +461,7 @@ def all_preprocessing(train, test, remove_night_hours):
     train.to_csv('../output/intermediate_train.csv', index=False)
     test.to_csv('../output/intermediate_test.csv', index=False)
     train, test = scale_features(train,test)
-    train = remove_outliers_isolation_forest(train)
+    #train = remove_outliers_isolation_forest(train)
 
     # fill missing values
     test = fill_missing_values(test)
@@ -480,7 +482,7 @@ def all_preprocessing(train, test, remove_night_hours):
 
     return train_X, train_y, test
 
-def data_preparation(remove_night_hours=True):
+def data_preparation():
     # Load input csv (energia and meteo)
     df_energia_2021 = pd.read_csv('../input/energia_202109-202112.csv', encoding='latin-1', na_filter = False)
     df_energia_2022 = pd.read_csv('../input/energia_202201-202212.csv', encoding='latin-1', na_filter = False)
@@ -498,6 +500,15 @@ def data_preparation(remove_night_hours=True):
     '''
     rename_energia(train_energia, test_energia_X)
     train, test = merge_by_date(train_energia, train_meteo, test_energia_X, test_meteo_X)
+    return train, test
 
+def data_prep_process_split(remove_night_hours=True):
+    train, test = data_preparation()
     train_X, train_y, test_X = all_preprocessing(train, test, remove_night_hours)
+
+    # Count the occurrences of each value in 'injecao' column
+    injecao_counts = train_y.value_counts()
+    print("Counts for each value in 'injecao' column:")
+    print(injecao_counts)
+
     return train_X, train_y, test_X
