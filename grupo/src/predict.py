@@ -19,7 +19,7 @@ from util import random_state, cross_val_score
 
 
 
-def print_best_models(X, y):
+def get_best_model(X, y):
     mae_df, mse_df, r2_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
     # Reset the indices to ensure alignment
@@ -42,7 +42,9 @@ def print_best_models(X, y):
     ]
 
     for (label, model) in models:
-        mae_error = cross_val_score(model, X, y, label=label)
+        model, acc = cross_val_score(model, X, y, label=label)
+
+    # return best model
 
 def create_mlp_model(train):
     # Create model

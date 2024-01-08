@@ -1,109 +1,72 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from preprocess import *
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.neural_network import MLPRegressor, MLPClassifier
+from sklearn.svm import SVR
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from catboost import CatBoostClassifier
 import numpy as np
-from predict import train_model, print_best_models, submit_prediction
-from ensemble import EnsembleModel
-from grid_search import grid_search
-import os
+from predict import submit_prediction
+from ordinal import OrdinalClassifier
+from util import hold_out_validation, cross_val_score
 
 pd.set_option('display.max_columns', None)
 
-script_dir = os.path.dirname(__file__)
-file_path1 = os.path.join(script_dir, '../input/energia_202109-202112.csv')
-df_energia_2021 = pd.read_csv(file_path1, encoding='latin-1', na_filter=False)
+def get_best_model(X, y, X_valid=None, y_valid=None):
+    # Reset the indices to ensure alignment
+    X = X.reset_index(drop=True)
+    y = y.reset_index(drop=True)
+    
+    model_list = []
 
-file_path2 = os.path.join(script_dir, '../input/energia_202201-202212.csv')
-df_energia_2022 = pd.read_csv(file_path2, encoding='latin-1', na_filter=False)
+    models = [
+        #('knn', KNeighborsRegressor()),
+        #('mlp', MLPRegressor(random_state=random_state, hidden_layer_sizes=(100, 75), early_stopping=True,
+        #                     learning_rate='invscaling', batch_size=64, max_iter=50, alpha=0,
+        #                     learning_rate_init=0.0075, warm_start=True)),
+        #('mlp', OrdinalClassifier(MLPClassifier(random_state=random_state, hidden_layer_sizes=(150, 100), early_stopping=False, batch_size=64, max_iter=50,
+        #                     learning_rate_init=0.001, verbose=True))),
+        #('dropout_mlp', OrdinalClassifier(DropoutMLP(X.shape[1]))),
+        #('lstm', ModelLSTM()),
+        ('rf', OrdinalClassifier(RandomForestClassifier(random_state=random_state))),
+        ('gb', OrdinalClassifier(GradientBoostingClassifier(random_state=random_state))),
+        #('svr', SVR()),
+        ('xgb', OrdinalClassifier(XGBClassifier(random_state=random_state, enable_categorical=True, max_depth=10,
+                               gamma=0.1, min_child_weight=1))),
+        ('lgb', OrdinalClassifier(LGBMClassifier(random_state=random_state, verbose=-1, learning_rate=0.01,
+                              lambda_l1=1, lambda_l2=1, n_estimators=1500))),
+        ('cb', OrdinalClassifier(CatBoostClassifier(random_state=random_state, verbose=0)))
+    ]
 
-file_path3 = os.path.join(script_dir, '../input/meteo_202109-202112.csv')
-df_meteo_2021 = pd.read_csv(file_path3, encoding='latin-1', na_values=["", "NaN", ""])
+    for (label, model) in models:
+        if (X_valid is not None) and (y_valid is not None):
+            model, accuracy = hold_out_validation(model, X, y, X_valid, y_valid, label=label)
+        else:
+            model, accuracy = cross_val_score(model, X, y, label=label)
+        model_list.append((label, model, accuracy))
 
-file_path4 = os.path.join(script_dir, '../input/meteo_202201-202212.csv')
-df_meteo_2022 = pd.read_csv(file_path4, encoding='latin-1', na_values=["", "NaN", ""])
+    best_model_entry = max(model_list, key=lambda x: x[2])
+    best_model_label = best_model_entry[0]
+    best_accuracy = best_model_entry[2]
+    best_model = best_model_entry[1]
 
-file_path5 = os.path.join(script_dir, '../input/energia_202301-202304.csv')
+    print(f"Best Model: {best_model_label} with Accuracy: {best_accuracy}")
+    return best_model
 
-file_path6 = os.path.join(script_dir, '../input/meteo_202301-202304.csv')
+if __name__== '__main__':
+    # prepares data (all preprocessing included)
+    train_X, train_y, test_X = data_preparation()
 
-output_path = os.path.join(script_dir, '../output/submission.csv')
+    # splits training set into training + validation set
+    #train_X, valid_X, train_y, valid_y = train_test_split(train_X, train_y, test_size=0.33, random_state=42)
 
-# Load input csv (energia and meteo)
-#df_energia_2021 = pd.read_csv('../input/energia_202109-202112.csv', encoding='latin-1', na_filter = False)
-#df_energia_2022 = pd.read_csv('../input/energia_202201-202212.csv', encoding='latin-1', na_filter = False)
-#df_meteo_2021 = pd.read_csv('../input/meteo_202109-202112.csv', encoding='latin-1', na_values=["", "NaN", ""])
-#df_meteo_2022 = pd.read_csv('../input/meteo_202201-202212.csv', encoding='latin-1', na_values=["", "NaN", ""])
-
-train_energia = pd.concat([df_energia_2021, df_energia_2022])
-train_meteo = pd.concat([df_meteo_2021, df_meteo_2022])
-
-test_energia_X = pd.read_csv(file_path5, encoding='latin-1')
-test_meteo_X = pd.read_csv(file_path6, encoding='latin-1')
-
-#test_energia_X = pd.read_csv('../input/energia_202301-202304.csv', encoding='latin-1')
-#test_meteo_X = pd.read_csv('../input/meteo_202301-202304.csv', encoding='latin-1')
-
-'''
-Rename columns
-'''
-rename_energia(train_energia, test_energia_X)
-train, test = merge_by_date(train_energia, train_meteo, test_energia_X, test_meteo_X)
-
-# Define hours to remove
-#hours_to_remove = [0, 1, 2, 3, 4, 5, 20, 21, 22, 23]
-# Filter the DataFrame to keep only the rows where 'hora' is not in the hours_to_remove list
-#train = train[~train['hora'].isin(hours_to_remove)]
-
-# Prepressing energia dataset
-preprocess_dates(train, test)
-preprocess_hora(train, test)
-preprocess_normal(train, test)
-preprocess_horario(train, test)
-preprocess_autoconsumo(train, test)
-preprocess_injecao(train, test)
-#fe_energia(train, test)
-
-# Prepressing meteo dataset
-preprocess_city_name(train, test)
-preprocess_temp(train, test)
-preprocess_feelslike(train, test)
-preprocess_temp_min(train, test)
-preprocess_temp_max(train, test)
-preprocess_pressure(train, test)
-preprocess_sea_level(train, test)
-preprocess_grnd_level(train, test)
-preprocess_humidity(train, test)
-preprocess_wind_speed(train, test)
-preprocess_rain1h(train, test)
-preprocess_clouds_all(train, test)
-train, test = preprocess_weather_description(train, test)
-# scale / normalize all features
-scale_features(train,test)
-train = remove_outliers_isolation_forest(train)
-
-# fill missing values
-test = fill_missing_values(test)
-
-#print(train.describe())
-#print(train.nunique())
-#print(train.info())
-#print()
-#print(test.describe())
-#print(test.nunique())
-#print(test.info())
-
-target_col = ["injecao"]
-train_X = train.drop(target_col, axis=1)
-train_y = train["injecao"]
-
-#train_X, train_y = implementation_samples(train_X, train_y)
-
-#best_model = EnsembleModel()
-#best_model.fit(train_X, train_y)
-#y_pred_rounded = best_model.predict(test)
-
-best_model = train_model(train_X, train_y)
-#best_model = grid_search(train_X, train_y)
-y_pred = best_model.predict(test)
-y_pred_rounded = np.round(y_pred).astype(int)
-submit_prediction(y_pred_rounded, output_path)
+    # gets the best model, without hyper parameter search
+    best_model = get_best_model(train_X, train_y)
+    # predicts the target label
+    y_pred = best_model.predict(test_X)
+    # rounds the target label
+    y_pred_rounded = np.round(y_pred).astype(int)
+    # submits the prediction
+    submit_prediction(test_X, y_pred_rounded, remove_night_hours=True)

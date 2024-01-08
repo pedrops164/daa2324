@@ -3,11 +3,12 @@ from sklearn import preprocessing
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder, StandardScaler, QuantileTransformer, MinMaxScaler
 from miceforest import ImputationKernel
-from util import random_state
+from util import random_state, night_hours
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.pipeline import Pipeline
 import numpy as np
+from sklearn.decomposition import PCA
 
 # Rename columns
 
@@ -77,7 +78,8 @@ def fill_missing_values(test_X):
 
 # examples implementation
 def implementation_samples(X_train, y_train):
-    smote = SMOTE(sampling_strategy={1: 1000, 2: 1000, 3: 1000, 4: 1000})
+    #smote = SMOTE(sampling_strategy={1: 1000, 2: 1000, 3: 1000, 4: 1000})
+    smote = SMOTE()
     X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
     return X_resampled, y_resampled
 
@@ -262,24 +264,29 @@ def preprocess_weather_description(train, test_X):
     return train, test_X
 
 def scale_features(train, test_X):
-    features=['hora','normal','horario','autoconsumo','temp','feels_like','temp_min','temp_max','pressure',
-              'humidity','wind_speed','clouds_all','day_of_year','temp_diff']
-    for feature in features:
-        # quantile transformer
-        #scaler = QuantileTransformer(output_distribution="normal", random_state=random_state)
-        # minmax scaling
-        #scaler = MinMaxScaler()
-        # standard scaling
-        scaler = StandardScaler()
+    #features = ['hora', 'normal', 'horario', 'autoconsumo', 'temp', 'feels_like',
+    #            'temp_min', 'temp_max', 'pressure', 'humidity', 'wind_speed',
+    #            'clouds_all', 'day_of_year', 'temp_diff']
+    features = ['hora', 'normal', 'horario', 'autoconsumo', 'temp', 'pressure', 'humidity', 'wind_speed', 'clouds_all',
+                'day_of_year', 'temp_diff']
+    
+    # Concatenate train and test data
+    combined = pd.concat([train[features], test_X[features]])
+    
+    # Initialize the scaler
+    scaler = StandardScaler()
 
-        # Fit the scaler to the train data and transform train data
-        train[feature] = scaler.fit_transform(train[[feature]])
+    # Fit the scaler to the combined data and transform
+    combined_scaled = scaler.fit_transform(combined)
 
-        # Transform test data using the same scaler
-        test_X[feature] = scaler.transform(test_X[[feature]])
+    # Update train and test_X data with the scaled values
+    train[features] = combined_scaled[:len(train)]
+    test_X[features] = combined_scaled[len(train):]
+
+    return train, test_X
 
 def remove_outliers(train):
-    cols = ['normal','horario','autoconsumo','temp','feels_like','temp_min','temp_max','humidity','wind_speed','clouds_all',
+    cols = ['normal','horario','autoconsumo','temp','humidity','wind_speed','clouds_all',
             'temp_diff']
 
     # Define a dictionary to hold the outlier indices for each column
@@ -313,8 +320,8 @@ def remove_outliers(train):
 
 # Achieves slightly better results
 def remove_outliers_isolation_forest(train, contamination_factor=0.01):
-    cols = ['normal','horario','autoconsumo','temp','feels_like','temp_min','temp_max','humidity','wind_speed','clouds_all',
-            'temp_diff']
+    #cols = ['normal','horario','autoconsumo','temp','feels_like','temp_min','temp_max','humidity','wind_speed','clouds_all','temp_diff']
+    cols = ['normal','horario','autoconsumo','temp','humidity','wind_speed','temp_diff']
     
     # We will collect the indices of rows considered inliers by IsolationForest for all specified columns
     inlier_indices = []
@@ -345,3 +352,152 @@ def remove_outliers_isolation_forest(train, contamination_factor=0.01):
 
     # Return the dataframe with only the inliers
     return train.loc[inliers_common].reset_index(drop=True)
+
+def remove_redundant_features(train, test):
+    # here we remove the features with very high correlation with other features.
+    # in particular, the features temp, feels_like, temp_min, and temp_max have high correlation, so we are going to remove some of those
+    train.drop(["feels_like"], inplace=True, axis=1)
+    train.drop(["temp_min"], inplace=True, axis=1)
+    train.drop(["temp_max"], inplace=True, axis=1)
+    test.drop(["feels_like"], inplace=True, axis=1)
+    test.drop(["temp_min"], inplace=True, axis=1)
+    test.drop(["temp_max"], inplace=True, axis=1)
+
+    # the feature wd_nan also is worthless
+    train.drop(["wd_nan"], inplace=True, axis=1)
+    test.drop(["wd_nan"], inplace=True, axis=1)
+
+def visualize_corr_matrix(train, test):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    train_corr = train.corr()
+    plt.figure(figsize=(10,10))
+    sns.heatmap(train_corr, annot=True, fmt=".2f", cmap='coolwarm', square=True)
+    plt.title('Feature Correlation Matrix')
+    plt.show()
+
+def apply_pca(X, n_components=None):
+    """
+    Apply PCA to reduce dimensions of the data
+    :param X: DataFrame, the input features
+    :param n_components: int, float or 'mle', number of components to keep
+    :return: DataFrame, the transformed data
+    """
+    pca = PCA(n_components=n_components, random_state=random_state)
+    X_pca = pca.fit_transform(X)
+    return pd.DataFrame(X_pca)
+
+def fill_test_missing_values(test):
+    path = "../input/open-meteo-braga2.csv"
+    meteo_data = pd.read_csv(path)
+    # Convert 'time' to a datetime object
+    meteo_data['time'] = pd.to_datetime(meteo_data['time'])
+    
+    # Extract day, month, year, and hour
+    meteo_data['dia'] = meteo_data['time'].dt.day
+    meteo_data['mes'] = meteo_data['time'].dt.month
+    meteo_data['ano'] = meteo_data['time'].dt.year
+    meteo_data['hora'] = meteo_data['time'].dt.hour
+
+    merged_data = pd.merge(test, meteo_data[['dia', 'mes', 'ano', 'hora',
+                                              'temperature_2m (°C)', 'pressure_msl (hPa)', 'relative_humidity_2m (%)', 'wind_speed_10m (m/s)']],
+                       how='left', on=['dia', 'mes', 'ano', 'hora'])
+    
+    # Save intermediate dataset before filling missing values
+    merged_data.to_csv('../output/intermediate_test.csv', index=False)
+    
+    # Fill missing values in 'temp' column with corresponding ones from 'temperature_2m (°C)'
+    merged_data['temp'] = merged_data['temp'].fillna(merged_data['temperature_2m (°C)'])
+    merged_data['pressure'] = merged_data['pressure'].fillna(merged_data['pressure_msl (hPa)'])
+    merged_data['humidity'] = merged_data['humidity'].fillna(merged_data['relative_humidity_2m (%)'])
+    merged_data['wind_speed'] = merged_data['wind_speed'].fillna(merged_data['wind_speed_10m (m/s)'])
+
+    # Save the dataset after filling missing values
+    merged_data.to_csv('../output/intermediate_test1.csv', index=False)
+
+    merged_data.drop(['temperature_2m (°C)'], axis=1, inplace=True)
+    merged_data.drop(['pressure_msl (hPa)'], axis=1, inplace=True)
+    merged_data.drop(['relative_humidity_2m (%)'], axis=1, inplace=True)
+    merged_data.drop(['wind_speed_10m (m/s)'], axis=1, inplace=True)
+    return merged_data
+
+
+def all_preprocessing(train, test, remove_night_hours):
+    if remove_night_hours:
+        # Filter the DataFrame to keep only the rows where 'hora' is not in the hours_to_remove list
+        train = train[~train['hora'].isin(night_hours)]
+
+    # fill missing values in test set
+    test = fill_test_missing_values(test)
+
+    # Prepressing energia dataset
+    preprocess_dates(train, test)
+    preprocess_hora(train, test)
+    preprocess_normal(train, test)
+    preprocess_horario(train, test)
+    preprocess_autoconsumo(train, test)
+    preprocess_injecao(train, test)
+    #fe_energia(train, test)
+
+    # Prepressing meteo dataset
+    preprocess_city_name(train, test)
+    preprocess_temp(train, test)
+    preprocess_feelslike(train, test)
+    preprocess_temp_min(train, test)
+    preprocess_temp_max(train, test)
+    preprocess_pressure(train, test)
+    preprocess_sea_level(train, test)
+    preprocess_grnd_level(train, test)
+    preprocess_humidity(train, test)
+    preprocess_wind_speed(train, test)
+    preprocess_rain1h(train, test)
+    preprocess_clouds_all(train, test)
+    train, test = preprocess_weather_description(train, test)
+    # scale / normalize all features
+    remove_redundant_features(train,test)
+    #visualize_corr_matrix(train,test)
+    train.to_csv('../output/intermediate_train.csv', index=False)
+    test.to_csv('../output/intermediate_test.csv', index=False)
+    train, test = scale_features(train,test)
+    train = remove_outliers_isolation_forest(train)
+
+    # fill missing values
+    test = fill_missing_values(test)
+
+    #print(train.describe())
+    #print(train.nunique())
+    #print(train.info())
+    #print()
+    #print(test.describe())
+    #print(test.nunique())
+    #print(test.info())
+
+    target_col = ["injecao"]
+    train_X = train.drop(target_col, axis=1)
+    train_y = train["injecao"]
+
+    #train_X, train_y = implementation_samples(train_X, train_y)
+
+    return train_X, train_y, test
+
+def data_preparation(remove_night_hours=True):
+    # Load input csv (energia and meteo)
+    df_energia_2021 = pd.read_csv('../input/energia_202109-202112.csv', encoding='latin-1', na_filter = False)
+    df_energia_2022 = pd.read_csv('../input/energia_202201-202212.csv', encoding='latin-1', na_filter = False)
+    df_meteo_2021 = pd.read_csv('../input/meteo_202109-202112.csv', encoding='latin-1', na_values=["", "NaN", ""])
+    df_meteo_2022 = pd.read_csv('../input/meteo_202201-202212.csv', encoding='latin-1', na_values=["", "NaN", ""])
+
+    train_energia = pd.concat([df_energia_2021, df_energia_2022])
+    train_meteo = pd.concat([df_meteo_2021, df_meteo_2022])
+
+    test_energia_X = pd.read_csv('../input/energia_202301-202304.csv', encoding='latin-1')
+    test_meteo_X = pd.read_csv('../input/meteo_202301-202304.csv', encoding='latin-1')
+
+    '''
+    Rename columns
+    '''
+    rename_energia(train_energia, test_energia_X)
+    train, test = merge_by_date(train_energia, train_meteo, test_energia_X, test_meteo_X)
+
+    train_X, train_y, test_X = all_preprocessing(train, test, remove_night_hours)
+    return train_X, train_y, test_X

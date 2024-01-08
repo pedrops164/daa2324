@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from preprocess import *
-from predict import predict, print_best_models
+from predict import predict, get_best_model
 
 # import data
 data = pd.read_csv('../input/train.csv')
@@ -51,5 +51,5 @@ print(test.info())
 train_X = train.drop(columns=['Price'])
 train_y = train['Price']
 
-#print_best_models(train_X, train_y)
+#get_best_model(train_X, train_y)
 predict(train_X, train_y)

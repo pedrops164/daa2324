@@ -1,0 +1,8 @@
+# conda install -c conda-forge miceforest -> ja da
+conda install -c conda-forge scikit-learn
+conda install -c conda-forge imbalanced-learn
+conda install -c conda-forge xgboost
+conda install -c conda-forge catboost
+conda install -c conda-forge hyperopt
+conda install -c conda-forge keras
+conda install -c conda-forge tensorflow

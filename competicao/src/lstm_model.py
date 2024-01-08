@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
-from keras.layers import LSTM, Dense
-from keras.optimizers import Adam
+from keras.layers import LSTM, Dense, Bidirectional, Dropout
+from keras.optimizers import Adam, SGD
 from keras.callbacks import EarlyStopping, LearningRateScheduler
 from sklearn.model_selection import train_test_split
 import math
@@ -25,11 +25,11 @@ class ModelLSTM:
 
     def fit(self, X, y):
         self.model = Sequential()
-        self.model.add(LSTM(100, activation='relu', input_shape=(self.seq_length, X.shape[1])))
+        self.model.add(Bidirectional(LSTM(300, activation='relu', input_shape=(self.seq_length, X.shape[1]))))
         self.model.add(Dense(100, activation='relu'))
         self.model.add(Dense(75, activation='relu'))
         self.model.add(Dense(1))
-        self.model.compile(optimizer=Adam(learning_rate=0.0001),
+        self.model.compile(optimizer=SGD(learning_rate=0.01, momentum=0.8, nesterov=True),
                            loss='mean_squared_error')
 
         # Convert X and y to numpy arrays for indexing
@@ -45,8 +45,8 @@ class ModelLSTM:
             ys.append(y_block)
     
         # fit
-        self.model.fit(np.array(xs), np.array(ys), epochs=50, batch_size=64,
-                       callbacks=[EarlyStopping(patience=5, restore_best_weights=True),
+        self.model.fit(np.array(xs), np.array(ys), epochs=500, batch_size=128,
+                       callbacks=[EarlyStopping(patience=10, restore_best_weights=True),
                                   LearningRateScheduler(scheduler)],
                        validation_split=0.1)
 
