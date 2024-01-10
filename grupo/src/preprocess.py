@@ -175,15 +175,15 @@ def preprocess_engine(train_X, test_X):
     train_X['Engine'].fillna(train_X['Name'].map(groupByNameTrain), inplace=True)
     test_X['Engine'].fillna(test_X['Name'].map(groupByNameTest), inplace=True)
     
-    priceBinTrain = pd.cut(train_X['Price'], bins=int(train_X['Price'].max()))
-    priceBinTest = pd.cut(test_X['Price'], bins=int(test_X['Price'].max()))
+    priceBinTrain = pd.cut(train_X['Seats'], bins=int(train_X['Seats'].max()))
+    priceBinTest = pd.cut(test_X['Seats'], bins=int(test_X['Seats'].max()))
 
     # observed=True to supress the deprecated warnings
-    groupByPriceBinTrain = train_X.groupby(priceBinTrain, observed=True)['Engine'].mean().to_dict()
-    groupByPriceBinTest = test_X.groupby(priceBinTest, observed=True)['Engine'].mean().to_dict()
+    groupBySeatsBinTrain = train_X.groupby(priceBinTrain, observed=True)['Engine'].mean().to_dict()
+    groupBySeatsBinTest = test_X.groupby(priceBinTest, observed=True)['Engine'].mean().to_dict()
     
-    train_X['Engine'].fillna(train_X['Price'].map(groupByPriceBinTrain), inplace=True)
-    test_X['Engine'].fillna(test_X['Price'].map(groupByPriceBinTest), inplace=True)
+    train_X['Engine'].fillna(train_X['Seats'].map(groupBySeatsBinTrain), inplace=True)
+    test_X['Engine'].fillna(test_X['Seats'].map(groupBySeatsBinTest), inplace=True)
 
     # Check for any remaining NaN values and fill them with a default value or handle them as needed
     # We will fill with the overall mean of the 'Engine' column

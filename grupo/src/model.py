@@ -22,8 +22,8 @@ X = pd.concat([train_X, test_X], axis=0)
 
 # tbag
 preprocess_owner_type(train, test)
-preprocess_engine(train, test)
 preprocess_seats(train, test)
+preprocess_engine(train, test)
 
 #hendrix
 preprocess_power(train, test)
