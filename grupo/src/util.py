@@ -30,4 +30,4 @@ def cross_val_score(model, X, y, label=''):
     print(f'Val MAE: {np.mean(mae_list):.5f} ± {np.std(mae_list):.5f} | {label}\n')
     #print(f'Val MAE: {np.mean(mae_list):.5f} ± {np.std(mae_list):.5f} | Val MSE: {np.mean(mse_list):.5f} ± {np.std(mse_list):.5f} | Val R2: {np.mean(r2_list):.5f} ± {np.std(r2_list):.5f} | {label}\n')
     
-    return np.mean(mae_list)
+    return model, np.mean(mae_list)
