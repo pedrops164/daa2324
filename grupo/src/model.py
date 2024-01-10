@@ -57,7 +57,6 @@ y_pred = best_model.predict(test_X)
 mae = mean_absolute_error(test_y, y_pred)
 
 mse = mean_squared_error(test_y, y_pred)
-
 rmse = np.sqrt(mse)
 
-print(f"MAE = {mae}\nRMSE = {rmse}")
+print(f"Test error (MAE) = {mae}\n")

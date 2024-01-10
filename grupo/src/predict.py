@@ -44,15 +44,16 @@ def get_best_model(X, y):
     model_list = []
     
     for (label, model) in models:
-        model, acc = cross_val_score(model, X, y, label=label)
-        model_list.append((label, model, acc))
+        model, error = cross_val_score(model, X, y, label=label)
+        model_list.append((label, model, error))
     
-    best_model_entry = max(model_list, key=lambda x : x[2])
-    best_model_label, best_model, best_model_accuracy = best_model_entry
+    # we get the model with least error
+    best_model_entry = min(model_list, key=lambda x : x[2])
+    best_model_label, best_model, best_model_error = best_model_entry
     
-    print(f"Best Model: {best_model_label} with Accuracy: {best_model_accuracy}")
+    print(f"Best Model: {best_model_label} with validation error: {best_model_error}")
 
-    return best_model, best_model_accuracy
+    return best_model, best_model_error
 
 def create_mlp_model(train):
     # Create model
